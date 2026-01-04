@@ -1,27 +1,30 @@
-# Driving Remote Controller
+# Driving Remote Controller for ATS / ETS2 (vJoy Web Controller)
 
-A low-latency mobile / web controller for ATS / ETS2 using vJoy.
-Your phone or browser acts as a controller and sends real-time inputs to a PC via WebSocket, which are mapped to a vJoy virtual joystick.
+Driving Remote Controller is a low-latency **mobile and web-based controller** for **American Truck Simulator (ATS)** and **Euro Truck Simulator 2 (ETS2)** using **vJoy**.  
+It allows your phone or any browser to act as a steering wheel, pedals, and button panel by sending real-time inputs to a Windows PC over **WebSocket**, which are then mapped to a **vJoy virtual joystick**.
+
+This project is ideal for players who want a **custom touchscreen controller**, **secondary input device**, or **DIY sim controller** for ATS / ETS2.
 
 ------------------------------------------------------------
 
-FEATURES
+## Features
 
-- Mobile-friendly web controller
-- Real-time WebSocket input
-- vJoy virtual joystick output
+- Mobile-friendly web controller (phone, tablet, or browser)
+- Real-time low-latency WebSocket communication
+- vJoy virtual joystick integration
 - Customizable control layouts
-- Layout import / export
-- Live server telemetry (rate & cadence)
-- Works with ATS / ETS2 and similar simulators
+- Layout import and export (`.dr` files)
+- Live server telemetry (packet rate and cadence)
+- Works with ATS, ETS2, and other games supporting vJoy
+- No additional hardware required
 
 ------------------------------------------------------------
 
-PROJECT STRUCTURE
+## Project Structure
 
 driving-remote/
-├─ server.py
-├─ controller/
+├─ server.py              (Python server: Flask + WebSocket + vJoy)
+├─ controller/            (Frontend web controller)
 │  ├─ src/
 │  ├─ public/
 │  ├─ package.json
@@ -31,15 +34,15 @@ driving-remote/
 
 ------------------------------------------------------------
 
-REQUIREMENTS
+## System Requirements
 
-PC (Server):
-- Windows
-- Python 3.10+
-- vJoy installed
-- Node.js 18+
+### Server (PC)
+- Windows 10 / 11
+- Python 3.10 or newer
+- vJoy installed and configured
+- Node.js 18 or newer
 
-Python packages:
+### Python Dependencies
 - flask
 - flask-sock
 - pyvjoy
@@ -47,44 +50,50 @@ Python packages:
 
 ------------------------------------------------------------
 
-STEP 1 — INSTALL vJOY
+## Step 1 — Install and Configure vJoy
 
 1. Download vJoy from:
    https://sourceforge.net/projects/vjoystick/
-2. Install vJoy
-3. Open vJoyConf
-4. Enable vJoy Device #1
-5. Enable required axes and buttons
-6. Click Apply
+2. Install vJoy on your PC
+3. Open **vJoyConf**
+4. Enable **vJoy Device #1**
+5. Enable the required axes and buttons
+6. Click **Apply**
+
+vJoy must be installed and configured before running the server.
 
 ------------------------------------------------------------
 
-STEP 2 — RUN THE SERVER
+## Step 2 — Run the Python Server
 
-From the project root:
+From the project root directory:
 
-pip install flask flask-sock pyvjoy rich
+pip install flask flask-sock pyvjoy rich  
 python server.py
 
-The server runs on port 8000 and outputs to vJoy Device #1.
+The server:
+- Listens on port **8000**
+- Outputs inputs to **vJoy Device #1**
+- Displays live telemetry in the console
 
 ------------------------------------------------------------
 
-STEP 3 — RUN THE FRONTEND
+## Step 3 — Run the Frontend Controller
 
-cd controller
-npm install
+cd controller  
+npm install  
 npm run dev
 
-This will show a local URL such as:
+The frontend will start and display a local URL such as:
+
 http://localhost:5173
 
 ------------------------------------------------------------
 
-STEP 4 — CONNECT FROM PHONE OR BROWSER
+## Step 4 — Connect from Phone or Browser
 
-1. Make sure the PC and phone are on the same network
-2. Open the frontend URL on your phone
+1. Ensure your PC and phone are on the same local network
+2. Open the frontend URL on your phone or browser
 3. Enter the WebSocket server address:
 
 ws://<PC_LOCAL_IP>:8000/ws
@@ -92,50 +101,52 @@ ws://<PC_LOCAL_IP>:8000/ws
 Example:
 ws://192.168.0.112:8000/ws
 
-4. Connect
+4. Connect to the server
+
+Once connected, all inputs from the web controller are sent to vJoy in real time.
 
 ------------------------------------------------------------
 
-STEP 5 — USE IN ATS / ETS2
+## Step 5 — Use in ATS / ETS2
 
-1. Launch ATS or ETS2
-2. Open Controls
-3. Select vJoy Device
-4. Bind axes and buttons
+1. Launch American Truck Simulator or Euro Truck Simulator 2
+2. Open **Controls**
+3. Select **vJoy Device** as the input device
+4. Bind steering, pedals, and buttons
 5. Start driving
 
 ------------------------------------------------------------
 
-LAYOUTS
+## Layouts
 
-- Built-in layouts are included
-- Custom layouts are stored in local storage
-- Layouts can be renamed, exported, and imported
-
-------------------------------------------------------------
-
-TROUBLESHOOTING
-
-vJoy not responding:
-- Ensure vJoy Device #1 is enabled in vJoyConf
-- Bind controls to vJoy in the game
-
-Phone cannot connect:
-- Check firewall allows port 8000
-- Ensure correct local IP
-- Use ws:// not http://
-
-High latency:
-- Use 5 GHz Wi-Fi if possible
-- Keep phone screen awake
-- Close background apps
+- Built-in layouts are included by default
+- Custom layouts are saved in browser local storage
+- Layouts can be renamed, exported, and imported across devices
 
 ------------------------------------------------------------
 
-LICENSE
+## Troubleshooting
 
-MIT
+**vJoy not responding**
+- Verify vJoy Device #1 is enabled in vJoyConf
+- Ensure controls are bound to vJoy inside the game
+
+**Phone cannot connect**
+- Check that port 8000 is allowed through the firewall
+- Confirm the correct local IP address
+- Use `ws://` (not `http://`)
+
+**High latency**
+- Prefer 5 GHz Wi-Fi
+- Keep the phone screen awake
+- Close background apps on the phone
 
 ------------------------------------------------------------
 
-Enjoy driving 🚛
+## License
+
+MIT License
+
+------------------------------------------------------------
+
+Driving Remote Controller provides a flexible and powerful way to use your phone as a controller for ATS and ETS2 using vJoy. Enjoy driving 🚛
