@@ -287,7 +287,6 @@ def main():
     # Import and run the server
     try:
         # Add parent directory to Python path so we can import server
-        import sys
         sys.path.insert(0, str(root))
         
         # Import the Flask app from server.py
