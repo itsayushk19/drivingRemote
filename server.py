@@ -1,8 +1,10 @@
-from flask import Flask
+from flask import Flask, send_from_directory
 from flask_sock import Sock
 import json
 import pyvjoy
 import time
+import os
+from pathlib import Path
 
 from rich.console import Console
 from rich.live import Live
@@ -10,7 +12,14 @@ from rich.table import Table
 from rich.text import Text
 
 # ---------------- APP ----------------
-app = Flask(__name__)
+# Get project root and controller dist path
+PROJECT_ROOT = Path(__file__).parent.absolute()
+CONTROLLER_DIST = PROJECT_ROOT / "controller" / "dist"
+
+# Initialize Flask with static file serving
+app = Flask(__name__, 
+            static_folder=str(CONTROLLER_DIST) if CONTROLLER_DIST.exists() else None,
+            static_url_path='')
 sock = Sock(app)
 console = Console()
 
@@ -208,7 +217,42 @@ def ws_handler(ws):
 
     console.print("\n❌ Client disconnected", style="bold red")
 
+# ---------------- STATIC FILE ROUTES ----------------
+@app.route('/')
+def index():
+    """Serve the controller web app index.html"""
+    if CONTROLLER_DIST.exists():
+        return send_from_directory(str(CONTROLLER_DIST), 'index.html')
+    else:
+        return """
+        <html>
+            <head><title>Driving Remote Controller</title></head>
+            <body style="font-family: sans-serif; padding: 40px; background: #111; color: #fff;">
+                <h1>⚠️ Controller Not Built</h1>
+                <p>The controller web app has not been built yet.</p>
+                <p>Please run:</p>
+                <pre style="background: #222; padding: 10px; border-radius: 5px;">cd controller && npm install && npm run build</pre>
+                <p>Or use the launcher:</p>
+                <pre style="background: #222; padding: 10px; border-radius: 5px;">python launcher/launcher.py</pre>
+            </body>
+        </html>
+        """, 503
+
+@app.route('/<path:path>')
+def static_files(path):
+    """Serve static files from the controller dist folder"""
+    if CONTROLLER_DIST.exists():
+        return send_from_directory(str(CONTROLLER_DIST), path)
+    else:
+        return "Controller not built", 404
+
 # ---------------- START ----------------
 if __name__ == "__main__":
     console.print("🚀 vJoy WebSocket Server running on :8000", style="bold cyan")
+    if CONTROLLER_DIST.exists():
+        console.print(f"📁 Serving controller from {CONTROLLER_DIST}", style="green")
+        console.print("🌐 Open http://localhost:8000 in your browser", style="cyan")
+    else:
+        console.print(f"⚠️  Controller not built at {CONTROLLER_DIST}", style="yellow")
+        console.print("   Run: python launcher/launcher.py", style="dim")
     app.run(host="0.0.0.0", port=8000)
