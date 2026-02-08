@@ -132,7 +132,8 @@ def build_controller(controller_dir):
 
 def check_python_deps():
     """Check if Python dependencies are installed"""
-    required = ["flask", "flask_sock", "pyvjoy"]
+    required = ["flask", "flask_sock", "rich"]
+    optional = ["pyvjoy"]  # Windows-only
     missing = []
     
     for pkg in required:
@@ -140,6 +141,13 @@ def check_python_deps():
             __import__(pkg)
         except ImportError:
             missing.append(pkg)
+    
+    # Check optional dependencies but don't require them
+    for pkg in optional:
+        try:
+            __import__(pkg)
+        except ImportError:
+            console.print(f"ℹ️  Optional dependency '{pkg}' not installed (Windows only)", style="dim")
     
     return missing
 

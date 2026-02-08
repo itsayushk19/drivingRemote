@@ -1,7 +1,6 @@
 from flask import Flask, send_from_directory
 from flask_sock import Sock
 import json
-import pyvjoy
 import time
 import os
 from pathlib import Path
@@ -10,6 +9,14 @@ from rich.console import Console
 from rich.live import Live
 from rich.table import Table
 from rich.text import Text
+
+# vJoy is Windows-only, make it optional for testing
+try:
+    import pyvjoy
+    VJOY_AVAILABLE = True
+except ImportError:
+    VJOY_AVAILABLE = False
+    print("⚠️  Warning: pyvjoy not available (Windows only)")
 
 # ---------------- APP ----------------
 # Get project root and controller dist path
@@ -24,17 +31,22 @@ sock = Sock(app)
 console = Console()
 
 # ---------------- vJOY ----------------
-j = pyvjoy.VJoyDevice(1)
+if VJOY_AVAILABLE:
+    try:
+        j = pyvjoy.VJoyDevice(1)
+    except Exception as e:
+        console.print(f"⚠️  Warning: Could not initialize vJoy device: {e}", style="yellow")
+        VJOY_AVAILABLE = False
 
 VJOY_AXES = {
-    "X": pyvjoy.HID_USAGE_X,
-    "Y": pyvjoy.HID_USAGE_Y,
-    "Z": pyvjoy.HID_USAGE_Z,
-    "RX": pyvjoy.HID_USAGE_RX,
-    "RY": pyvjoy.HID_USAGE_RY,
-    "RZ": pyvjoy.HID_USAGE_RZ,
-    "SLIDER1": pyvjoy.HID_USAGE_SL0,
-    "SLIDER2": pyvjoy.HID_USAGE_SL1,
+    "X": pyvjoy.HID_USAGE_X if VJOY_AVAILABLE else 0x30,
+    "Y": pyvjoy.HID_USAGE_Y if VJOY_AVAILABLE else 0x31,
+    "Z": pyvjoy.HID_USAGE_Z if VJOY_AVAILABLE else 0x32,
+    "RX": pyvjoy.HID_USAGE_RX if VJOY_AVAILABLE else 0x33,
+    "RY": pyvjoy.HID_USAGE_RY if VJOY_AVAILABLE else 0x34,
+    "RZ": pyvjoy.HID_USAGE_RZ if VJOY_AVAILABLE else 0x35,
+    "SLIDER1": pyvjoy.HID_USAGE_SL0 if VJOY_AVAILABLE else 0x36,
+    "SLIDER2": pyvjoy.HID_USAGE_SL1 if VJOY_AVAILABLE else 0x37,
 }
 
 def axis_to_vjoy(value, mode):
@@ -187,22 +199,26 @@ def ws_handler(ws):
                 }
 
                 # ---- APPLY TO vJOY (FULL RATE) ----
-                for axis, axis_data in axes.items():
-                    if axis not in VJOY_AXES:
-                        continue
-                    j.set_axis(
-                        VJOY_AXES[axis],
-                        axis_to_vjoy(
-                            float(axis_data.get("value", 0)),
-                            axis_data.get("mode", "centered"),
-                        ),
-                    )
+                if VJOY_AVAILABLE:
+                    for axis, axis_data in axes.items():
+                        if axis not in VJOY_AXES:
+                            continue
+                        try:
+                            j.set_axis(
+                                VJOY_AXES[axis],
+                                axis_to_vjoy(
+                                    float(axis_data.get("value", 0)),
+                                    axis_data.get("mode", "centered"),
+                                ),
+                            )
+                        except Exception:
+                            pass
 
-                for btn, pressed in buttons.items():
-                    try:
-                        j.set_button(int(btn), int(bool(pressed)))
-                    except:
-                        pass
+                    for btn, pressed in buttons.items():
+                        try:
+                            j.set_button(int(btn), int(bool(pressed)))
+                        except Exception:
+                            pass
 
                 # ---- PACKETS PER SECOND ----
                 if now_wall - last_pps_time >= 1.0:
