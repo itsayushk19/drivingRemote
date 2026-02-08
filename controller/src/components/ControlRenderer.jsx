@@ -3,6 +3,8 @@ import { useApp } from "../state/appState";
 import Steering from "./controls/Steering";
 import Pedal from "./controls/Pedal";
 import Button from "./controls/Button";
+import Joystick from "./controls/Joystick";
+import HShifter from "./controls/HShifter";
 
 export default function ControlRenderer({
   control,
@@ -50,6 +52,8 @@ export default function ControlRenderer({
   const C =
     control.type === "steering" ? Steering :
     control.type === "pedal"    ? Pedal :
+    control.type === "joystick" ? Joystick :
+    control.type === "hshifter" ? HShifter :
     Button;
 
   return (

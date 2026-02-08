@@ -1,0 +1,4 @@
+flask==3.1.0
+flask-sock==0.7.0
+pyvjoy==1.0.1
+rich==13.9.4
