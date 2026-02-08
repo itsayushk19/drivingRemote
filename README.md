@@ -69,14 +69,46 @@ This system is designed for sim-racing and truck-sim enthusiasts who want a **pr
 
 ## 🚀 Quick Start
 
-### Option 1: Using the Launcher (Recommended)
+### For End Users (Recommended)
+
+**Option 1: Download Standalone Executable** (Coming Soon)
+1. Download `DrivingRemote.exe` from [Releases](https://github.com/itsayushk19/drivingRemote/releases)
+2. Double-click to run
+3. Follow the on-screen instructions
+4. Scan QR code or open the URL on your phone/browser
+5. Start driving! 🚛
+
+**Option 2: Build from Source**
+```bash
+# Clone the repository
+git clone https://github.com/itsayushk19/drivingRemote.git
+cd drivingRemote
+
+# Build the executable
+# On Windows:
+build.bat
+
+# On Linux/Mac:
+./build.sh
+
+# Run the executable
+# On Windows:
+dist\DrivingRemote.exe
+
+# On Linux/Mac:
+dist/DrivingRemote
+```
+
+### For Developers
+
+**Option 1: Using the Launcher (Recommended)**
 
 ```bash
 # Clone the repository
 git clone https://github.com/itsayushk19/drivingRemote.git
 cd drivingRemote
 
-# Run the launcher
+# Run the launcher - it handles everything automatically!
 python launcher/launcher.py
 ```
 
@@ -84,10 +116,10 @@ The launcher will:
 1. ✅ Check and install Node.js dependencies
 2. ✅ Build the web controller
 3. ✅ Check and install Python dependencies  
-4. ✅ Display connection info with QR code
-5. ✅ Guide you through starting the servers
+4. ✅ Start the server with static file serving
+5. ✅ Display connection info with QR code
 
-### Option 2: Manual Setup
+**Option 2: Manual Development Setup**
 
 **1. Install vJoy**
 - Download from [vJoy SourceForge](https://sourceforge.net/projects/vjoystick/)
@@ -96,27 +128,39 @@ The launcher will:
 
 **2. Install Server Dependencies**
 ```bash
-pip install -r server/requirements.txt
+pip install flask flask-sock pyvjoy rich qrcode[pil]
 ```
 
 **3. Install and Build Controller**
 ```bash
 cd controller
 npm install
-npm run dev  # For development
-# OR
 npm run build  # For production
 ```
 
 **4. Start the Server**
 ```bash
+# From project root
+python launcher/launcher.py
+# OR run server directly
 python server.py
 ```
 
-**5. Connect from Mobile**
-- Open `http://YOUR_PC_IP:5173` on your mobile device
-- Or scan the QR code displayed by the launcher
-- Connect to `ws://YOUR_PC_IP:8000/ws`
+**5. For Live Development**
+```bash
+# In one terminal - run the WebSocket/API server
+python server.py
+
+# In another terminal - run the Vite dev server for hot reload
+cd controller
+npm run dev
+# Then open http://localhost:5173
+```
+
+**6. Connect from Mobile**
+- Open the URL displayed by the launcher on your mobile device
+- Or manually navigate to `http://YOUR_PC_IP:8000`
+- The controller connects automatically via WebSocket
 
 ---
 
@@ -162,6 +206,44 @@ python server.py
 ---
 
 ## 🎨 Layout System
+
+### Using Edit Mode ⭐ NEW
+
+The controller now includes a powerful **Edit Mode** that lets you customize your layout in real-time:
+
+1. **Enter Edit Mode**
+   - Click the gear icon (⚙️) in the top-right corner of the controller
+   - Controls will show dashed red outlines when in edit mode
+
+2. **Add Controls**
+   - Click "+ Add Control" dropdown
+   - Select: Steering, Pedal/Slider, Button, Joystick, or H-Shifter
+   - New control appears on screen
+
+3. **Position Controls**
+   - Drag controls to reposition them
+   - Controls automatically avoid overlapping
+
+4. **Edit Control Properties**
+   - Tap any control to open the property editor
+   - Configure:
+     - Position and size
+     - Axis mapping (X, Y, Z, RX, RY, RZ, SLIDER1, SLIDER2)
+     - Deadzone and range
+     - Response curves (linear, exponential, soft-center, cubic)
+     - Control-specific settings (steering sensitivity, gear patterns, etc.)
+
+5. **Test Your Layout**
+   - Click "🧪 Test" to test controls without accidentally moving them
+   - Test mode keeps edit UI visible but disables dragging
+
+6. **Delete Controls**
+   - Click the ✕ button that appears on each control in edit mode
+
+7. **Save Your Layout**
+   - Click "✓ Done" when finished editing
+   - Save with a custom name
+   - Layout is saved to browser localStorage
 
 ### Creating Custom Layouts
 
