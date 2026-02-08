@@ -132,7 +132,8 @@ def build_controller(controller_dir):
 
 def check_python_deps():
     """Check if Python dependencies are installed"""
-    required = ["flask", "flask_sock", "pyvjoy"]
+    required = ["flask", "flask_sock", "rich"]
+    optional = ["pyvjoy"]  # Windows-only
     missing = []
     
     for pkg in required:
@@ -140,6 +141,13 @@ def check_python_deps():
             __import__(pkg)
         except ImportError:
             missing.append(pkg)
+    
+    # Check optional dependencies but don't require them
+    for pkg in optional:
+        try:
+            __import__(pkg)
+        except ImportError:
+            console.print(f"ℹ️  Optional dependency '{pkg}' not installed (Windows only)", style="dim")
     
     return missing
 
@@ -185,7 +193,7 @@ def generate_qr_code(url):
         return "[QR code requires 'qrcode' package]"
 
 
-def show_startup_banner(ip, web_port, ws_port):
+def show_startup_banner(ip, port):
     """Show the startup banner"""
     console.clear()
     
@@ -198,8 +206,8 @@ def show_startup_banner(ip, web_port, ws_port):
     console.print()
     
     # Connection info
-    web_url = f"http://{ip}:{web_port}"
-    ws_url = f"ws://{ip}:{ws_port}/ws"
+    web_url = f"http://{ip}:{port}"
+    ws_url = f"ws://{ip}:{port}/ws"
     
     table = Table(show_header=False, box=box.SIMPLE, padding=(0, 2))
     table.add_row("📱 Controller URL:", f"[cyan]{web_url}[/cyan]")
@@ -214,6 +222,7 @@ def show_startup_banner(ip, web_port, ws_port):
     console.print()
     
     console.print("⏳ Waiting for connection...", style="yellow")
+    console.print("   Press Ctrl+C to stop the server", style="dim")
     console.print()
 
 
@@ -231,6 +240,7 @@ def main():
     # Check Node.js
     if not check_nodejs():
         console.print("❌ Node.js is not installed. Please install Node.js 18+ first.", style="red")
+        console.print("   Download from: https://nodejs.org/", style="dim")
         sys.exit(1)
     
     if not check_npm():
@@ -248,8 +258,8 @@ def main():
     
     # Build controller
     if not build_controller(controller_dir):
-        # Try running dev server instead
-        console.print("⚠️  Running in development mode", style="yellow")
+        console.print("❌ Failed to build controller", style="red")
+        sys.exit(1)
     
     # Check Python dependencies
     missing_deps = check_python_deps()
@@ -265,40 +275,33 @@ def main():
     
     # Get network info
     ip = get_local_ip()
-    
-    # Detect if we're in dev or production mode
-    dist_exists = (controller_dir / "dist").exists()
-    if dist_exists:
-        web_port = 3000  # Production HTTP server
-        console.print("⚠️  Production build detected. You'll need to serve the dist/ folder.", style="yellow")
-    else:
-        web_port = 5173  # Vite dev server
-        console.print("⚠️  Development mode. Run 'npm run dev' in controller/ directory.", style="yellow")
-    
-    ws_port = 8000
+    port = 8000
     
     # Show banner
-    show_startup_banner(ip, web_port, ws_port)
+    show_startup_banner(ip, port)
     
     # Start the server
     console.print("🚀 Starting server...", style="cyan")
-    
-    # In a real implementation, we would start both the web server and WebSocket server
-    # For now, just inform the user
     console.print()
-    console.print("To start the server manually:", style="yellow")
-    console.print(f"  1. cd {controller_dir}", style="dim")
-    console.print("  2. npm run dev", style="dim")
-    console.print(f"  3. In another terminal: python {root}/server.py", style="dim")
-    console.print()
-    console.print("Press Ctrl+C to exit", style="dim")
     
+    # Import and run the server
     try:
-        while True:
-            time.sleep(1)
+        # Add parent directory to Python path so we can import server
+        sys.path.insert(0, str(root))
+        
+        # Import the Flask app from server.py
+        from server import app
+        
+        # Run the server
+        app.run(host="0.0.0.0", port=port, debug=False)
+        
     except KeyboardInterrupt:
         console.print()
         console.print("👋 Shutting down...", style="yellow")
+    except Exception as e:
+        console.print()
+        console.print(f"❌ Server error: {e}", style="red")
+        sys.exit(1)
 
 
 if __name__ == "__main__":

@@ -15,6 +15,13 @@ controller/node_modules
 controller/dist/
 controller/build/
 
+# PyInstaller
+*.spec
+build/
+dist/
+*.exe
+*.app
+
 # OS
 .DS_Store
 Thumbs.db

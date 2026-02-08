@@ -17,6 +17,9 @@ export function AppProvider({ children }) {
     `ws://${location.hostname}:8000/ws`
   );
 
+  /* ===================== EDIT MODE ===================== */
+  const [selectedControl, setSelectedControl] = useState(null);
+
   /* ===================== LAYOUT IDENTITY (🔑 FIX) ===================== */
   const [selectedLayout, setSelectedLayout] = useState(() =>
     localStorage.getItem(LAST_LAYOUT_KEY) || "basic"
@@ -104,6 +107,10 @@ export function AppProvider({ children }) {
     /* layout identity */
     selectedLayout,
     setSelectedLayout,
+
+    /* edit mode */
+    selectedControl,
+    setSelectedControl,
 
     /* connection */
     connected,

@@ -36,6 +36,10 @@ export default function ControllerPage({ openMenu }) {
 
   const [showSave, setShowSave] = useState(false);
   const [showRename, setShowRename] = useState(false);
+  
+  /* ---------- EDIT MODE ---------- */
+  const [editMode, setEditMode] = useState(false);
+  const [testMode, setTestMode] = useState(false);
 
   /* ---------- DISABLE SCROLL ---------- */
   useEffect(() => {
@@ -156,6 +160,49 @@ const confirmRename = async name => {
     }
   };
 
+  /* ---------- ADD CONTROL ---------- */
+  const addControl = (type) => {
+    const newControl = {
+      id: `${type}_${Date.now()}`,
+      type,
+      x: 0.1,
+      y: 0.3,
+      w: type === "steering" ? 0.4 : type === "joystick" ? 0.25 : 0.2,
+      h: type === "steering" ? 0.4 : type === "joystick" ? 0.25 : type === "hshifter" ? 0.3 : 0.15,
+      config: {
+        axis: type === "steering" ? "X" : type === "pedal" ? "Y" : type === "joystick" ? "RX" : "Z",
+        mode: type === "pedal" ? "normal" : "centered",
+        deadzone: 0.05,
+        range: 1,
+        ...(type === "button" && { button: 1 }),
+        ...(type === "hshifter" && { 
+          pattern: "7-speed",
+          axis: "RZ" 
+        }),
+        ...(type === "joystick" && { 
+          xAxis: "RX",
+          yAxis: "RY",
+          gate: "circular" 
+        })
+      }
+    };
+
+    setLayout(prev => ({
+      ...prev,
+      controls: [...prev.controls, newControl]
+    }));
+  };
+
+  /* ---------- DELETE CONTROL ---------- */
+  const deleteControl = (id) => {
+    if (confirm("Delete this control?")) {
+      setLayout(prev => ({
+        ...prev,
+        controls: prev.controls.filter(c => c.id !== id)
+      }));
+    }
+  };
+
   /* ---------- MOVE CONTROL ---------- */
   const updateControlPosition = useCallback((id, patch) => {
     setLayout(prev => {
@@ -186,23 +233,76 @@ const confirmRename = async name => {
           ))}
         </select>
 
-        <button style={btnGreen} onClick={() => setShowSave(true)}>💾 Save</button>
-        <button
-          style={btnAmber}
-          disabled={layout.id === "basic"}
-          onClick={() => setShowRename(true)}
-        >
-          ✎ Rename
-        </button>
-        <button
-          style={btnRed}
-          disabled={layout.id === "basic"}
-          onClick={remove}
-        >
-          🗑 Delete
-        </button>
+        {!editMode ? (
+          <>
+            <button style={btnGreen} onClick={() => setShowSave(true)}>💾 Save</button>
+            <button
+              style={btnAmber}
+              disabled={layout.id === "basic"}
+              onClick={() => setShowRename(true)}
+            >
+              ✎ Rename
+            </button>
+            <button
+              style={btnRed}
+              disabled={layout.id === "basic"}
+              onClick={remove}
+            >
+              🗑 Delete
+            </button>
+          </>
+        ) : (
+          <>
+            {/* ADD CONTROL DROPDOWN */}
+            <select
+              onChange={e => {
+                if (e.target.value) {
+                  addControl(e.target.value);
+                  e.target.value = "";
+                }
+              }}
+              style={addControlSelect}
+              defaultValue=""
+            >
+              <option value="" disabled>+ Add Control</option>
+              <option value="steering">🎯 Steering</option>
+              <option value="pedal">🦶 Pedal/Slider</option>
+              <option value="button">🔘 Button</option>
+              <option value="joystick">🕹️ Joystick</option>
+              <option value="hshifter">⚙️ H-Shifter</option>
+            </select>
+
+            {/* TEST MODE TOGGLE */}
+            <button
+              style={testMode ? btnAmber : btnGray}
+              onClick={() => setTestMode(!testMode)}
+            >
+              {testMode ? "🧪 Testing" : "🧪 Test"}
+            </button>
+
+            {/* SAVE BUTTON */}
+            <button style={btnGreen} onClick={() => {
+              setEditMode(false);
+              setTestMode(false);
+              setShowSave(true);
+            }}>
+              ✓ Done
+            </button>
+          </>
+        )}
 
         <div style={spacer} />
+
+        {/* EDIT MODE TOGGLE */}
+        <button
+          style={editMode ? btnPurple : iconBtn}
+          onClick={() => {
+            setEditMode(!editMode);
+            if (editMode) setTestMode(false);
+          }}
+        >
+          ⚙️
+        </button>
 
         <div style={storage}>
           {storagePct.toFixed(1)}%
@@ -227,14 +327,30 @@ const confirmRename = async name => {
       {/* ================= CANVAS ================= */}
       <div style={canvas}>
         {layout.controls.map(c => (
-          <ControlRenderer
-            key={c.id}
-            control={c}
-            onChange={(id, v) =>
-              setControlState(s => ({ ...s, [id]: v }))
-            }
-            onUpdatePosition={updateControlPosition}
-          />
+          <div key={c.id} style={{ position: "relative" }}>
+            <ControlRenderer
+              control={c}
+              editMode={editMode && !testMode}
+              onChange={(id, v) =>
+                setControlState(s => ({ ...s, [id]: v }))
+              }
+              onUpdatePosition={updateControlPosition}
+            />
+            
+            {/* DELETE BUTTON IN EDIT MODE */}
+            {editMode && !testMode && (
+              <button
+                style={{
+                  ...deleteBtn,
+                  left: `${c.x * 100}%`,
+                  top: `${c.y * 100}%`,
+                }}
+                onClick={() => deleteControl(c.id)}
+              >
+                ✕
+              </button>
+            )}
+          </div>
         ))}
       </div>
 
@@ -330,6 +446,31 @@ const btnRed = {
   fontWeight: 700
 };
 
+const btnGray = {
+  background: "linear-gradient(180deg,#6b7280,#374151)",
+  borderRadius: 999,
+  padding: "6px 12px",
+  color: "#fff",
+  fontWeight: 700
+};
+
+const btnPurple = {
+  background: "linear-gradient(180deg,#a855f7,#7e22ce)",
+  borderRadius: 999,
+  padding: "6px 12px",
+  color: "#fff",
+  fontWeight: 700
+};
+
+const addControlSelect = {
+  padding: "6px 10px",
+  borderRadius: 10,
+  background: "#15803d",
+  color: "#fff",
+  border: "1px solid rgba(255,255,255,.3)",
+  fontWeight: 600
+};
+
 const spacer = { flex: 1 };
 
 const storage = {
@@ -365,4 +506,23 @@ const canvas = {
   left: 0,
   right: 0,
   bottom: 0
+};
+
+const deleteBtn = {
+  position: "absolute",
+  transform: "translate(-50%, -50%)",
+  background: "#ef4444",
+  color: "#fff",
+  border: "2px solid #fff",
+  borderRadius: "50%",
+  width: 28,
+  height: 28,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  cursor: "pointer",
+  fontSize: 14,
+  fontWeight: 700,
+  zIndex: 1001,
+  boxShadow: "0 2px 8px rgba(0,0,0,0.5)"
 };

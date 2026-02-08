@@ -1,31 +1,52 @@
-from flask import Flask
+from flask import Flask, send_from_directory
 from flask_sock import Sock
 import json
-import pyvjoy
 import time
+import os
+from pathlib import Path
 
 from rich.console import Console
 from rich.live import Live
 from rich.table import Table
 from rich.text import Text
 
+# vJoy is Windows-only, make it optional for testing
+try:
+    import pyvjoy
+    VJOY_AVAILABLE = True
+except ImportError:
+    VJOY_AVAILABLE = False
+    print("⚠️  Warning: pyvjoy not available (Windows only)")
+
 # ---------------- APP ----------------
-app = Flask(__name__)
+# Get project root and controller dist path
+PROJECT_ROOT = Path(__file__).parent.absolute()
+CONTROLLER_DIST = PROJECT_ROOT / "controller" / "dist"
+
+# Initialize Flask with static file serving
+app = Flask(__name__, 
+            static_folder=str(CONTROLLER_DIST) if CONTROLLER_DIST.exists() else None,
+            static_url_path='')
 sock = Sock(app)
 console = Console()
 
 # ---------------- vJOY ----------------
-j = pyvjoy.VJoyDevice(1)
+if VJOY_AVAILABLE:
+    try:
+        j = pyvjoy.VJoyDevice(1)
+    except Exception as e:
+        console.print(f"⚠️  Warning: Could not initialize vJoy device: {e}", style="yellow")
+        VJOY_AVAILABLE = False
 
 VJOY_AXES = {
-    "X": pyvjoy.HID_USAGE_X,
-    "Y": pyvjoy.HID_USAGE_Y,
-    "Z": pyvjoy.HID_USAGE_Z,
-    "RX": pyvjoy.HID_USAGE_RX,
-    "RY": pyvjoy.HID_USAGE_RY,
-    "RZ": pyvjoy.HID_USAGE_RZ,
-    "SLIDER1": pyvjoy.HID_USAGE_SL0,
-    "SLIDER2": pyvjoy.HID_USAGE_SL1,
+    "X": pyvjoy.HID_USAGE_X if VJOY_AVAILABLE else 0x30,
+    "Y": pyvjoy.HID_USAGE_Y if VJOY_AVAILABLE else 0x31,
+    "Z": pyvjoy.HID_USAGE_Z if VJOY_AVAILABLE else 0x32,
+    "RX": pyvjoy.HID_USAGE_RX if VJOY_AVAILABLE else 0x33,
+    "RY": pyvjoy.HID_USAGE_RY if VJOY_AVAILABLE else 0x34,
+    "RZ": pyvjoy.HID_USAGE_RZ if VJOY_AVAILABLE else 0x35,
+    "SLIDER1": pyvjoy.HID_USAGE_SL0 if VJOY_AVAILABLE else 0x36,
+    "SLIDER2": pyvjoy.HID_USAGE_SL1 if VJOY_AVAILABLE else 0x37,
 }
 
 def axis_to_vjoy(value, mode):
@@ -178,22 +199,26 @@ def ws_handler(ws):
                 }
 
                 # ---- APPLY TO vJOY (FULL RATE) ----
-                for axis, axis_data in axes.items():
-                    if axis not in VJOY_AXES:
-                        continue
-                    j.set_axis(
-                        VJOY_AXES[axis],
-                        axis_to_vjoy(
-                            float(axis_data.get("value", 0)),
-                            axis_data.get("mode", "centered"),
-                        ),
-                    )
+                if VJOY_AVAILABLE:
+                    for axis, axis_data in axes.items():
+                        if axis not in VJOY_AXES:
+                            continue
+                        try:
+                            j.set_axis(
+                                VJOY_AXES[axis],
+                                axis_to_vjoy(
+                                    float(axis_data.get("value", 0)),
+                                    axis_data.get("mode", "centered"),
+                                ),
+                            )
+                        except Exception:
+                            pass
 
-                for btn, pressed in buttons.items():
-                    try:
-                        j.set_button(int(btn), int(bool(pressed)))
-                    except:
-                        pass
+                    for btn, pressed in buttons.items():
+                        try:
+                            j.set_button(int(btn), int(bool(pressed)))
+                        except Exception:
+                            pass
 
                 # ---- PACKETS PER SECOND ----
                 if now_wall - last_pps_time >= 1.0:
@@ -208,7 +233,42 @@ def ws_handler(ws):
 
     console.print("\n❌ Client disconnected", style="bold red")
 
+# ---------------- STATIC FILE ROUTES ----------------
+@app.route('/')
+def index():
+    """Serve the controller web app index.html"""
+    if CONTROLLER_DIST.exists():
+        return send_from_directory(str(CONTROLLER_DIST), 'index.html')
+    else:
+        return """
+        <html>
+            <head><title>Driving Remote Controller</title></head>
+            <body style="font-family: sans-serif; padding: 40px; background: #111; color: #fff;">
+                <h1>⚠️ Controller Not Built</h1>
+                <p>The controller web app has not been built yet.</p>
+                <p>Please run:</p>
+                <pre style="background: #222; padding: 10px; border-radius: 5px;">cd controller && npm install && npm run build</pre>
+                <p>Or use the launcher:</p>
+                <pre style="background: #222; padding: 10px; border-radius: 5px;">python launcher/launcher.py</pre>
+            </body>
+        </html>
+        """, 503
+
+@app.route('/<path:path>')
+def static_files(path):
+    """Serve static files from the controller dist folder"""
+    if CONTROLLER_DIST.exists():
+        return send_from_directory(str(CONTROLLER_DIST), path)
+    else:
+        return "Controller not built", 404
+
 # ---------------- START ----------------
 if __name__ == "__main__":
     console.print("🚀 vJoy WebSocket Server running on :8000", style="bold cyan")
+    if CONTROLLER_DIST.exists():
+        console.print(f"📁 Serving controller from {CONTROLLER_DIST}", style="green")
+        console.print("🌐 Open http://localhost:8000 in your browser", style="cyan")
+    else:
+        console.print(f"⚠️  Controller not built at {CONTROLLER_DIST}", style="yellow")
+        console.print("   Run: python launcher/launcher.py", style="dim")
     app.run(host="0.0.0.0", port=8000)
