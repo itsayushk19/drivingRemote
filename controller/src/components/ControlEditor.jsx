@@ -114,22 +114,69 @@ export default function ControlEditor({ layout, setLayout }) {
         />
 
         {(selectedControl.type === "steering" ||
-          selectedControl.type === "pedal") && (
+          selectedControl.type === "pedal" ||
+          selectedControl.type === "joystick") && (
           <>
             {/* AXIS MAPPING */}
             <Section title="Axis Mapping">
-              <label style={label}>vJoy Axis</label>
-              <select
-                value={selectedControl.config.axis || ""}
-                onChange={e =>
-                  updateConfig({ axis: e.target.value })
-                }
-                style={select}
-              >
-                {AXES.map(a => (
-                  <option key={a} value={a}>{a}</option>
-                ))}
-              </select>
+              {selectedControl.type !== "joystick" && (
+                <>
+                  <label style={label}>vJoy Axis</label>
+                  <select
+                    value={selectedControl.config.axis || ""}
+                    onChange={e =>
+                      updateConfig({ axis: e.target.value })
+                    }
+                    style={select}
+                  >
+                    {AXES.map(a => (
+                      <option key={a} value={a}>{a}</option>
+                    ))}
+                  </select>
+                </>
+              )}
+
+              {selectedControl.type === "joystick" && (
+                <>
+                  <label style={label}>X Axis</label>
+                  <select
+                    value={selectedControl.config.xAxis || "RX"}
+                    onChange={e =>
+                      updateConfig({ xAxis: e.target.value })
+                    }
+                    style={select}
+                  >
+                    {AXES.map(a => (
+                      <option key={a} value={a}>{a}</option>
+                    ))}
+                  </select>
+
+                  <label style={label}>Y Axis</label>
+                  <select
+                    value={selectedControl.config.yAxis || "RY"}
+                    onChange={e =>
+                      updateConfig({ yAxis: e.target.value })
+                    }
+                    style={select}
+                  >
+                    {AXES.map(a => (
+                      <option key={a} value={a}>{a}</option>
+                    ))}
+                  </select>
+
+                  <label style={label}>Gate Type</label>
+                  <select
+                    value={selectedControl.config.gate || "circular"}
+                    onChange={e =>
+                      updateConfig({ gate: e.target.value })
+                    }
+                    style={select}
+                  >
+                    <option value="circular">Circular</option>
+                    <option value="square">Square</option>
+                  </select>
+                </>
+              )}
 
               <Slider
                 label="Deadzone"
@@ -193,6 +240,60 @@ export default function ControlEditor({ layout, setLayout }) {
               )}
             </Section>
           </>
+        )}
+
+        {selectedControl.type === "button" && (
+          <Section title="Button">
+            <Slider
+              label="Button Number"
+              min={1}
+              max={32}
+              step={1}
+              value={selectedControl.config.button ?? 1}
+              onChange={v => updateConfig({ button: v })}
+            />
+
+            <label style={label}>Mode</label>
+            <select
+              value={selectedControl.config.mode || "momentary"}
+              onChange={e =>
+                updateConfig({ mode: e.target.value })
+              }
+              style={select}
+            >
+              <option value="momentary">Momentary</option>
+              <option value="toggle">Toggle</option>
+            </select>
+          </Section>
+        )}
+
+        {selectedControl.type === "hshifter" && (
+          <Section title="H-Shifter">
+            <label style={label}>vJoy Axis</label>
+            <select
+              value={selectedControl.config.axis || "RZ"}
+              onChange={e =>
+                updateConfig({ axis: e.target.value })
+              }
+              style={select}
+            >
+              {AXES.map(a => (
+                <option key={a} value={a}>{a}</option>
+              ))}
+            </select>
+
+            <label style={label}>Gear Pattern</label>
+            <select
+              value={selectedControl.config.pattern || "7-speed"}
+              onChange={e =>
+                updateConfig({ pattern: e.target.value })
+              }
+              style={select}
+            >
+              <option value="6-speed">6-Speed</option>
+              <option value="7-speed">7-Speed (with Reverse)</option>
+            </select>
+          </Section>
         )}
 
         {selectedControl.type === "steering" && (
