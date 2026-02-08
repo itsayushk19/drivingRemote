@@ -64,11 +64,12 @@ export default function ControlRenderer({
         top: `${control.y * 100}%`,
         width: `${control.w * 100}%`,
         height: `${control.h * 100}%`,
-        outline: editMode ? "2px dashed red" : "none"
+        outline: editMode ? "2px dashed red" : "none",
+        touchAction: editMode ? "none" : "auto"
       }}
-      onPointerDown={onDown}
-      onPointerMove={onMove}
-      onPointerUp={onUp}
+      onPointerDown={editMode ? onDown : undefined}
+      onPointerMove={editMode ? onMove : undefined}
+      onPointerUp={editMode ? onUp : undefined}
     >
       <C
         control={control}
@@ -80,6 +81,5 @@ export default function ControlRenderer({
 }
 
 const wrapper = {
-  position: "absolute",
-  touchAction: "none"
+  position: "absolute"
 };

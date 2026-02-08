@@ -236,30 +236,49 @@ def main():
     root = get_project_root()
     controller_dir = root / "controller"
     server_dir = root / "server"
+    dist_dir = controller_dir / "dist"
     
-    # Check Node.js
-    if not check_nodejs():
-        console.print("❌ Node.js is not installed. Please install Node.js 18+ first.", style="red")
-        console.print("   Download from: https://nodejs.org/", style="dim")
-        sys.exit(1)
+    # Detect if running as PyInstaller bundle
+    is_bundled = getattr(sys, 'frozen', False)
     
-    if not check_npm():
-        console.print("❌ npm is not installed. Please install npm first.", style="red")
-        sys.exit(1)
+    # Check if controller is already built (bundled or pre-built)
+    controller_built = dist_dir.exists() and (dist_dir / "index.html").exists()
     
-    console.print("✅ Node.js and npm are installed", style="green")
-    
-    # Check and install controller dependencies
-    if not check_controller_deps(controller_dir):
-        if not install_controller_deps(controller_dir):
+    if is_bundled:
+        console.print("ℹ️  Running as bundled executable", style="cyan")
+        
+        if not controller_built:
+            console.print("❌ Controller files not found in bundle.", style="red")
+            console.print("   The executable may be corrupted. Please rebuild using build_exe.py", style="dim")
             sys.exit(1)
+        
+        console.print("✅ Using bundled controller files", style="green")
     else:
-        console.print("✅ Controller dependencies installed", style="green")
-    
-    # Build controller
-    if not build_controller(controller_dir):
-        console.print("❌ Failed to build controller", style="red")
-        sys.exit(1)
+        console.print("ℹ️  Running in development mode", style="cyan")
+        
+        # In development mode, check for Node.js and npm
+        if not check_nodejs():
+            console.print("❌ Node.js is not installed. Please install Node.js 18+ first.", style="red")
+            console.print("   Download from: https://nodejs.org/", style="dim")
+            sys.exit(1)
+        
+        if not check_npm():
+            console.print("❌ npm is not installed. Please install npm first.", style="red")
+            sys.exit(1)
+        
+        console.print("✅ Node.js and npm are installed", style="green")
+        
+        # Check and install controller dependencies
+        if not check_controller_deps(controller_dir):
+            if not install_controller_deps(controller_dir):
+                sys.exit(1)
+        else:
+            console.print("✅ Controller dependencies installed", style="green")
+        
+        # Build controller if not already built
+        if not build_controller(controller_dir):
+            console.print("❌ Failed to build controller", style="red")
+            sys.exit(1)
     
     # Check Python dependencies
     missing_deps = check_python_deps()
