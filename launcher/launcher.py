@@ -265,7 +265,16 @@ def main():
     
     # Get network info
     ip = get_local_ip()
-    web_port = 5173  # Vite dev server port
+    
+    # Detect if we're in dev or production mode
+    dist_exists = (controller_dir / "dist").exists()
+    if dist_exists:
+        web_port = 3000  # Production HTTP server
+        console.print("⚠️  Production build detected. You'll need to serve the dist/ folder.", style="yellow")
+    else:
+        web_port = 5173  # Vite dev server
+        console.print("⚠️  Development mode. Run 'npm run dev' in controller/ directory.", style="yellow")
+    
     ws_port = 8000
     
     # Show banner

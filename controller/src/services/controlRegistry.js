@@ -265,7 +265,7 @@ export function createControl(type, overrides = {}) {
     throw new Error(`Unknown control type: ${type}`);
   }
 
-  const id = overrides.id || `${type}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const id = overrides.id || `${type}_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
 
   const control = {
     id,
